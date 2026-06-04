@@ -35,6 +35,14 @@ body {
   display: grid;
   place-items: center;
 }
+.switch-link {
+  position: relative;
+  z-index: 1;
+  display: block;
+  width: 100%;
+  border-radius: 3%;
+  outline-offset: 8px;
+}
 .stage::before,
 .stage::after {
   content: "";
@@ -58,6 +66,26 @@ body {
   opacity: 0.30;
   animation-delay: 0.28s;
 }
+.switch-link::before {
+  content: "";
+  position: absolute;
+  z-index: 0;
+  left: 50%;
+  top: 46%;
+  width: 26%;
+  aspect-ratio: 1 / 1.45;
+  border-radius: 44%;
+  background:
+    radial-gradient(ellipse,
+      rgba(255, 124, 18, 0.78) 0%,
+      rgba(255, 83, 0, 0.45) 28%,
+      rgba(255, 83, 0, 0.18) 52%,
+      rgba(255, 83, 0, 0) 74%);
+  filter: blur(24px);
+  opacity: 0.50;
+  transform: translate(-50%, -50%) scale(0.82);
+  animation: heartbeat-glow 2.15s ease-in-out infinite;
+}
 .switch {
   position: relative;
   z-index: 1;
@@ -67,10 +95,21 @@ body {
   filter: drop-shadow(0 0 34px rgba(255, 106, 0, 0.18));
   animation: switch-breathe 2.4s ease-in-out infinite;
 }
+.switch-link:hover .switch,
+.switch-link:focus-visible .switch {
+  filter: drop-shadow(0 0 58px rgba(255, 106, 0, 0.48));
+}
 @keyframes pulse {
   0%, 100% { opacity: 0.32; transform: scale(0.82); }
   42% { opacity: 0.75; transform: scale(1.04); }
   58% { opacity: 0.45; transform: scale(0.95); }
+}
+@keyframes heartbeat-glow {
+  0%, 100% { opacity: 0.30; transform: translate(-50%, -50%) scale(0.74); }
+  14% { opacity: 0.88; transform: translate(-50%, -50%) scale(1.08); }
+  22% { opacity: 0.42; transform: translate(-50%, -50%) scale(0.84); }
+  34% { opacity: 0.78; transform: translate(-50%, -50%) scale(0.98); }
+  50% { opacity: 0.34; transform: translate(-50%, -50%) scale(0.78); }
 }
 @keyframes switch-breathe {
   0%, 100% {
@@ -85,13 +124,16 @@ body {
 @media (prefers-reduced-motion: reduce) {
   .stage::before,
   .stage::after,
+  .switch-link::before,
   .switch { animation: none; }
 }
 </style>
 </head>
 <body>
 <main class="stage" aria-label="LastCommit">
-  <img class="switch" src="/lastcommit-switch.png" alt="LastCommit switch: STILL HERE / LIGHTS OUT. Built with Rust. Armed for absence.">
+  <a class="switch-link" href="https://github.com/wavey-ai/lastcommit" aria-label="Open LastCommit on GitHub">
+    <img class="switch" src="/lastcommit-switch.png" alt="LastCommit switch: STILL HERE / LIGHTS OUT. Built with Rust. Armed for absence.">
+  </a>
 </main>
 </body>
 </html>"#;

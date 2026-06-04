@@ -26,7 +26,13 @@ fn root_returns_switch_splash_html() {
         "splash HTML should reference the switch image"
     );
     assert!(
-        response.body.contains("switch-breathe"),
+        response
+            .body
+            .contains("https://github.com/wavey-ai/lastcommit"),
+        "splash switch should link to the GitHub repo"
+    );
+    assert!(
+        response.body.contains("heartbeat-glow"),
         "splash HTML should include the heartbeat-like pulse animation"
     );
 }

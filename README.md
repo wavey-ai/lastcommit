@@ -14,7 +14,9 @@ memory safe, even in death.
 </p>
 
 <p align="center">
-  <img src="assets/lastcommit-switch.png" alt="LastCommit switch concept: STILL HERE / LIGHTS OUT. Built with Rust. Armed for absence." width="760">
+  <a href="https://github.com/wavey-ai/lastcommit">
+    <img src="assets/lastcommit-switch.png" alt="LastCommit switch concept: STILL HERE / LIGHTS OUT. Built with Rust. Armed for absence." width="760">
+  </a>
 </p>
 
 ## Cloudflare fit
