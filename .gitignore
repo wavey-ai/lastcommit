@@ -1,0 +1,10 @@
+build/
+target/
+node_modules/
+.wrangler/
+
+.env
+.env.*
+!.env.example
+
+assets/lastcommit-contact-sheet.png

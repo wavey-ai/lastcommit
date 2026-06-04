@@ -1,0 +1,13 @@
+{
+  "name": "lastcommit-worker",
+  "private": true,
+  "scripts": {
+    "build": "cargo install -q worker-build && worker-build --release",
+    "dev": "wrangler dev --test-scheduled",
+    "deploy": "wrangler deploy"
+  },
+  "devDependencies": {
+    "wrangler": "4.93.0"
+  }
+}
+
