@@ -10,6 +10,91 @@ const DEFAULT_INACTIVE_DAYS: u64 = 180;
 const MAX_REPO_PAGES: u32 = 20;
 const STATUS_KV_BINDING: &str = "LASTCOMMIT_STATUS";
 const STATUS_KV_KEY: &str = "lastcommit:deadman-status";
+const SPLASH_HTML: &str = r#"<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>LastCommit</title>
+<meta name="description" content="Your code should not disappear with you.">
+<style>
+:root { color-scheme: dark; background: #000; }
+* { box-sizing: border-box; }
+html, body { width: 100%; min-height: 100%; margin: 0; background: #000; }
+body {
+  min-height: 100svh;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+.stage {
+  position: relative;
+  width: min(78vmin, 760px);
+  aspect-ratio: 1;
+  display: grid;
+  place-items: center;
+}
+.stage::before,
+.stage::after {
+  content: "";
+  position: absolute;
+  inset: 18%;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle,
+      rgba(255, 106, 0, 0.42) 0%,
+      rgba(255, 106, 0, 0.20) 26%,
+      rgba(255, 106, 0, 0.08) 48%,
+      rgba(255, 106, 0, 0) 70%);
+  filter: blur(22px);
+  opacity: 0.55;
+  transform: scale(0.82);
+  animation: pulse 2.4s ease-in-out infinite;
+}
+.stage::after {
+  inset: 4%;
+  filter: blur(42px);
+  opacity: 0.30;
+  animation-delay: 0.28s;
+}
+.switch {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  height: auto;
+  display: block;
+  filter: drop-shadow(0 0 34px rgba(255, 106, 0, 0.18));
+  animation: switch-breathe 2.4s ease-in-out infinite;
+}
+@keyframes pulse {
+  0%, 100% { opacity: 0.32; transform: scale(0.82); }
+  42% { opacity: 0.75; transform: scale(1.04); }
+  58% { opacity: 0.45; transform: scale(0.95); }
+}
+@keyframes switch-breathe {
+  0%, 100% {
+    filter: drop-shadow(0 0 24px rgba(255, 106, 0, 0.12));
+    transform: scale(0.995);
+  }
+  42% {
+    filter: drop-shadow(0 0 54px rgba(255, 106, 0, 0.42));
+    transform: scale(1);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .stage::before,
+  .stage::after,
+  .switch { animation: none; }
+}
+</style>
+</head>
+<body>
+<main class="stage" aria-label="LastCommit">
+  <img class="switch" src="/lastcommit-switch.png" alt="LastCommit switch: STILL HERE / LIGHTS OUT. Built with Rust. Armed for absence.">
+</main>
+</body>
+</html>"#;
 
 type RunResult<T> = std::result::Result<T, String>;
 
@@ -252,7 +337,10 @@ fn redacted_notes(config: &LastCommitConfig) -> Vec<String> {
     if !config.release_repos.configured() {
         notes.push("RELEASE_REPOS is empty; no repositories can be made public.".to_string());
     }
-    if matches!(config.watch_repos, RepoSelection::AllPrivate | RepoSelection::Empty) {
+    if matches!(
+        config.watch_repos,
+        RepoSelection::AllPrivate | RepoSelection::Empty
+    ) {
         notes.push(
             "WATCH_REPOS is not explicit; large orgs can exceed the Workers Free subrequest cap."
                 .to_string(),
@@ -282,12 +370,14 @@ pub async fn main(request: Request, env: Env, _ctx: worker::Context) -> worker::
     let path = url.path();
 
     match (request.method(), path) {
+        (Method::Get, "/") | (Method::Get, "/index.html") => splash_response(),
         (Method::Get, "/health") | (Method::Get, "/healthz") => health_response(&env),
-        (Method::Get, "/dead") | (Method::Get, "/deadz") => match cached_deadman_response(&env).await
-        {
-            Ok(response) => Ok(response),
-            Err(error) => json_error(&error, 500),
-        },
+        (Method::Get, "/dead") | (Method::Get, "/deadz") => {
+            match cached_deadman_response(&env).await {
+                Ok(response) => Ok(response),
+                Err(error) => json_error(&error, 500),
+            }
+        }
         (Method::Post, "/run") => {
             if let Err(error) = authorize_admin(&request, &env) {
                 return json_error(&error, 401);
@@ -351,6 +441,15 @@ pub async fn scheduled(event: ScheduledEvent, env: Env, _ctx: ScheduleContext) {
 }
 
 #[cfg(target_arch = "wasm32")]
+fn splash_response() -> worker::Result<Response> {
+    let response = Response::from_html(SPLASH_HTML)?.with_status(200);
+    response
+        .headers()
+        .set("Cache-Control", "public, max-age=300")?;
+    Ok(response)
+}
+
+#[cfg(target_arch = "wasm32")]
 fn health_response(env: &Env) -> worker::Result<Response> {
     let config = load_config(env);
     let report = HealthReport {
@@ -363,7 +462,13 @@ fn health_response(env: &Env) -> worker::Result<Response> {
         trusted_login_count: config.trusted_logins.len(),
         watch_repo_source: config.watch_repos.source(),
         release_repo_source: config.release_repos.source(),
-        endpoints: vec!["GET /healthz", "GET /deadz", "GET /dead", "POST /run"],
+        endpoints: vec![
+            "GET /",
+            "GET /healthz",
+            "GET /deadz",
+            "GET /dead",
+            "POST /run",
+        ],
         notes: redacted_notes(&config),
     };
     json_response(&report, 200)
@@ -488,11 +593,7 @@ fn traffic_light_from_cached(cached: &str) -> RunResult<TrafficLightStatus> {
 }
 
 #[cfg(target_arch = "wasm32")]
-async fn run_lastcommit(
-    env: &Env,
-    mode: ExecutionMode,
-    trigger: &str,
-) -> RunResult<DeadmanReport> {
+async fn run_lastcommit(env: &Env, mode: ExecutionMode, trigger: &str) -> RunResult<DeadmanReport> {
     let config = load_config(env);
     let token = read_secret(env, "GITHUB_TOKEN")?;
     let now_millis = Date::now().as_millis() as i64;
@@ -658,7 +759,9 @@ async fn resolve_repos(
 ) -> RunResult<Vec<String>> {
     match selection {
         RepoSelection::Explicit(repos) => Ok(repos.clone()),
-        RepoSelection::AllPrivate | RepoSelection::Empty => client.list_private_repos(&config.org).await,
+        RepoSelection::AllPrivate | RepoSelection::Empty => {
+            client.list_private_repos(&config.org).await
+        }
     }
 }
 
@@ -670,7 +773,10 @@ async fn find_heartbeat(
 ) -> RunResult<Option<Heartbeat>> {
     for repo in repos {
         for login in &config.trusted_logins {
-            if client.has_recent_commit(&config.org, repo, login, "author", since).await? {
+            if client
+                .has_recent_commit(&config.org, repo, login, "author", since)
+                .await?
+            {
                 return Ok(Some(Heartbeat {
                     login: login.clone(),
                     repo: repo.clone(),
@@ -678,7 +784,10 @@ async fn find_heartbeat(
                     since: since.to_string(),
                 }));
             }
-            if client.has_recent_commit(&config.org, repo, login, "committer", since).await? {
+            if client
+                .has_recent_commit(&config.org, repo, login, "committer", since)
+                .await?
+            {
                 return Ok(Some(Heartbeat {
                     login: login.clone(),
                     repo: repo.clone(),
@@ -961,11 +1070,9 @@ fn truncate(value: &str, max_chars: usize) -> String {
 
 #[cfg(target_arch = "wasm32")]
 fn json_response<T: Serialize>(value: &T, status: u16) -> worker::Result<Response> {
-    let headers = Headers::new();
-    headers.set("Cache-Control", "no-store")?;
-    Ok(Response::from_json(value)?
-        .with_status(status)
-        .with_headers(headers))
+    let response = Response::from_json(value)?.with_status(status);
+    response.headers().set("Cache-Control", "no-store")?;
+    Ok(response)
 }
 
 #[cfg(target_arch = "wasm32")]
@@ -1038,9 +1145,7 @@ mod tests {
             _since: &str,
         ) -> RunResult<bool> {
             Ok(self.recent_commits.iter().any(|commit| {
-                commit.repo == repo
-                    && commit.login == login
-                    && commit.field == field
+                commit.repo == repo && commit.login == login && commit.field == field
             }))
         }
 
@@ -1182,12 +1287,9 @@ mod tests {
             github_api_base: DEFAULT_GITHUB_API_BASE.to_string(),
         };
 
-        let repos = futures::executor::block_on(resolve_repos(
-            &client,
-            &config,
-            &config.watch_repos,
-        ))
-        .unwrap();
+        let repos =
+            futures::executor::block_on(resolve_repos(&client, &config, &config.watch_repos))
+                .unwrap();
 
         assert_eq!(repos, vec!["watch-one".to_string()]);
         assert_eq!(client.listed_private_repos.get(), 0);
@@ -1206,21 +1308,20 @@ mod tests {
             github_api_base: DEFAULT_GITHUB_API_BASE.to_string(),
         };
 
-        let repos = futures::executor::block_on(resolve_repos(
-            &client,
-            &config,
-            &config.watch_repos,
-        ))
-        .unwrap();
+        let repos =
+            futures::executor::block_on(resolve_repos(&client, &config, &config.watch_repos))
+                .unwrap();
 
-        assert_eq!(repos, vec!["private-one".to_string(), "private-two".to_string()]);
+        assert_eq!(
+            repos,
+            vec!["private-one".to_string(), "private-two".to_string()]
+        );
         assert_eq!(client.listed_private_repos.get(), 1);
     }
 
     #[test]
     fn heartbeat_detection_checks_author_and_committer() {
-        let client =
-            MockGithub::default().with_recent_commit("watch-one", "jamie", "committer");
+        let client = MockGithub::default().with_recent_commit("watch-one", "jamie", "committer");
         let config = LastCommitConfig {
             org: "wavey-ai".to_string(),
             inactive_days: 180,

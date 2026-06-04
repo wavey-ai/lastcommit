@@ -1,9 +1,5 @@
 # LastCommit
 
-<p align="center">
-  <img src="assets/lastcommit-switch.png" alt="LastCommit switch concept: STILL HERE / LIGHTS OUT. Built with Rust. Armed for absence." width="760">
-</p>
-
 LastCommit monitors authenticated activity in your GitHub org. If no trusted
 maintainer commits for a configured number of days, it executes your continuity
 plan, such as making selected private repositories public.
@@ -12,6 +8,10 @@ Your code should not disappear with you.
 
 It is a Rust Cloudflare Worker because you should know your last commit is
 memory safe, even in death.
+
+<p align="center">
+  <img src="assets/lastcommit-switch.png" alt="LastCommit switch concept: STILL HERE / LIGHTS OUT. Built with Rust. Armed for absence." width="760">
+</p>
 
 ## Cloudflare fit
 
@@ -27,6 +27,7 @@ boundary.
 
 ## Endpoints
 
+- `GET /` - black-background splash page with the LastCommit switch.
 - `GET /healthz` - public liveness and redacted config shape.
 - `GET /deadz` - public traffic-light status from the last cron or manual run.
   It does not call GitHub.
@@ -146,30 +147,6 @@ Deploy:
 ```bash
 npx wrangler@4.93.0 deploy
 ```
-
-## Splash Image Ideas
-
-These are serious-fun art directions for the README, product splash, or launch
-deck.
-
-- **The repo vault**: a bank-vault door cracked open, but the lock is a Git
-  commit graph. A small key tag reads `LASTCOMMIT_ARMED=false`.
-- **The terminal will**: a clean terminal window showing `git commit -S` beside
-  a signed continuity plan, with Cloudflare-orange light and GitHub-black ink.
-- **The calendar tripwire**: a desk calendar where day N is circled, and a repo
-  privacy toggle flips from private to public like a dramatic stage switch.
-- **The dead-man heartbeat**: a sparse monitor line made from Git commit nodes;
-  the line is flat until it becomes a public archive shelf.
-- **The maintainer constellation**: trusted maintainers as bright commit stars
-  over a dark org map. If the stars go quiet, the private repos become visible
-  constellations.
-- **The safety label**: a product-shot style sticker that says `Dry Run Until
-  Armed`, wrapped around a tiny vault, serious compliance energy with one dry
-  joke in the caption.
-- **The code should not disappear**: a library shelf where private repo boxes
-  are behind glass, and LastCommit is the emergency-release handle.
-- **Memory safe, even in death**: a Rust-orange continuity switch on a brushed
-  metal panel. Make it elegant, not Halloween.
 
 ## Guardrails
 

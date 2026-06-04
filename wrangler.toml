@@ -3,6 +3,10 @@ main = "build/worker/shim.mjs"
 compatibility_date = "2026-06-04"
 account_id = "c57bb20727aa3564966d2bb693abddce"
 workers_dev = true
+routes = [
+  { pattern = "lastcommit.xyz", custom_domain = true },
+  { pattern = "www.lastcommit.xyz", custom_domain = true },
+]
 
 [vars]
 GITHUB_ORG = "wavey-ai"
@@ -16,9 +20,14 @@ GITHUB_API_BASE = "https://api.github.com"
 [triggers]
 crons = ["17 9 * * *"]
 
+[assets]
+directory = "./assets"
+not_found_handling = "none"
+run_worker_first = ["/", "/index.html", "/health", "/healthz", "/dead", "/deadz", "/run"]
+
 [[kv_namespaces]]
 binding = "LASTCOMMIT_STATUS"
-id = "replace-with-lastcommit-status-kv-namespace-id"
+id = "24cad4f8775e41f18083953674df1160"
 
 [observability]
 enabled = true

@@ -12,6 +12,27 @@ struct HttpResponse {
 
 #[test]
 #[ignore = "requires a running LastCommit Worker, for example `npm run dev`"]
+fn root_returns_switch_splash_html() {
+    let response = http_call(ureq::get(&worker_base()));
+
+    assert_eq!(response.status, 200, "root status");
+    assert!(
+        response.content_type.starts_with("text/html"),
+        "root content type should be HTML, got {}",
+        response.content_type
+    );
+    assert!(
+        response.body.contains("/lastcommit-switch.png"),
+        "splash HTML should reference the switch image"
+    );
+    assert!(
+        response.body.contains("switch-breathe"),
+        "splash HTML should include the heartbeat-like pulse animation"
+    );
+}
+
+#[test]
+#[ignore = "requires a running LastCommit Worker, for example `npm run dev`"]
 fn healthz_returns_liveness_json() {
     let response = http_call(ureq::get(&format!("{}/healthz", worker_base())));
 
@@ -22,8 +43,16 @@ fn healthz_returns_liveness_json() {
         response.content_type
     );
     let json: serde_json::Value = serde_json::from_str(&response.body).expect("healthz JSON");
-    assert_eq!(json.get("service").and_then(|value| value.as_str()), Some("LastCommit"));
-    assert_eq!(json.get("endpoints").and_then(|value| value.as_array()).map(Vec::len), Some(4));
+    assert_eq!(
+        json.get("service").and_then(|value| value.as_str()),
+        Some("LastCommit")
+    );
+    assert_eq!(
+        json.get("endpoints")
+            .and_then(|value| value.as_array())
+            .map(Vec::len),
+        Some(5)
+    );
 }
 
 #[test]
@@ -37,7 +66,10 @@ fn deadz_returns_public_traffic_light_or_uncached_status() {
         response.status
     );
     let json: serde_json::Value = serde_json::from_str(&response.body).expect("deadz JSON");
-    assert_eq!(json.get("service").and_then(|value| value.as_str()), Some("LastCommit"));
+    assert_eq!(
+        json.get("service").and_then(|value| value.as_str()),
+        Some("LastCommit")
+    );
 
     if response.status == 200 {
         let light = json
@@ -49,7 +81,9 @@ fn deadz_returns_public_traffic_light_or_uncached_status() {
             "unexpected light {light}"
         );
         assert!(
-            json.get("message").and_then(|value| value.as_str()).is_some(),
+            json.get("message")
+                .and_then(|value| value.as_str())
+                .is_some(),
             "traffic-light response should include a public message"
         );
     } else {
@@ -67,8 +101,14 @@ fn run_rejects_missing_admin_token() {
 
     assert_eq!(response.status, 401, "run without auth should be rejected");
     let json: serde_json::Value = serde_json::from_str(&response.body).expect("run JSON");
-    assert_eq!(json.get("service").and_then(|value| value.as_str()), Some("LastCommit"));
-    assert_eq!(json.get("ok").and_then(|value| value.as_bool()), Some(false));
+    assert_eq!(
+        json.get("service").and_then(|value| value.as_str()),
+        Some("LastCommit")
+    );
+    assert_eq!(
+        json.get("ok").and_then(|value| value.as_bool()),
+        Some(false)
+    );
 }
 
 fn worker_base() -> String {
@@ -98,4 +138,3 @@ fn http_call(request: ureq::Request) -> HttpResponse {
         body,
     }
 }
-
