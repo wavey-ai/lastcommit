@@ -10,6 +10,10 @@ It is a Rust Cloudflare Worker because you should know your last commit is
 memory safe, even in death.
 
 <p align="center">
+  <a href="https://lastcommit.xyz"><strong>lastcommit.xyz</strong></a>
+</p>
+
+<p align="center">
   <img src="assets/lastcommit-switch.png" alt="LastCommit switch concept: STILL HERE / LIGHTS OUT. Built with Rust. Armed for absence." width="760">
 </p>
 
@@ -38,7 +42,7 @@ boundary.
 Use:
 
 ```bash
-curl https://lastcommit.<your-subdomain>.workers.dev/deadz
+curl https://lastcommit.xyz/deadz
 ```
 
 Public response shape:
