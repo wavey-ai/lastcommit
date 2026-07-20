@@ -121,9 +121,9 @@ Cron and `POST /run` write the detailed `lastcommit:deadman-status` key.
 `GET /deadz` returns `503` until that key exists.
 
 For the MVP, `GITHUB_TOKEN` must be able to read the watched repos and update
-the selected repos. A fine-grained token should be limited to the selected org
-and repos, with metadata and contents read access plus administration write
-access for repos that may be made public.
+the selected repos. Limit a fine-grained token to the selected organization and
+repositories. Give it read access to metadata and contents. For repositories
+that can become public, also give it administration write access.
 
 For a production continuity product, a GitHub App is cleaner than a personal
 access token because installation scope and rotation are easier to reason about.
